@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدير الدخل والمصاريف والأقساط (2026 - 2027)</title>
+<style>
+  :root {
+    --primary: #1e40af;
+    --primary-light: #eff6ff;
+    --success: #047857;
+    --success-light: #ecfdf5;
+    --danger: #b91c1c;
+    --danger-light: #fef2f2;
+    --warning: #b45309;
+    --warning-light: #fffbeb;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 85px; }
+  
+  header {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+    color: #fff;
+    padding: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 12px; }
+  .header-top h1 { margin: 0; font-size: 1.15rem; }
+  .sync-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.2); }
+  .sync-badge.online { background: #10b981; color: #fff; font-weight: bold; }
+  
+  .month-bar { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+  .month-bar select {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 1rem; font-weight: bold; color: var(--primary); background: #fff;
+  }
+  .btn-nav {
+    background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;
+  }
+  .btn-nav:active { background: rgba(255,255,255,0.35); }
+
+  .container { max-width: 900px; margin: 16px auto; padding: 0 12px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (min-width: 640px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+  
+  .card { background: var(--card); border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--border); margin-bottom: 14px; }
+  .kpi-card { border-right: 4px solid var(--primary); }
+  .kpi-card.income { border-right-color: var(--success); }
+  .kpi-card.expense { border-right-color: var(--warning); }
+  .kpi-card.inst { border-right-color: var(--danger); }
+  .kpi-title { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .kpi-val { font-size: 1.2rem; font-weight: bold; }
+
+  .section-title { font-size: 1rem; font-weight: bold; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; }
+  
+  .item-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-info { flex: 1; }
+  .item-name { font-weight: bold; font-size: 0.95rem; }
+  .item-sub { font-size: 0.75rem; color: var(--muted); }
+  
+  .amount-input {
+    width: 115px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; text-align: left; direction: ltr; font-size: 0.95rem; font-weight: bold;
+  }
+  .amount-input:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
+
+  .btn {
+    padding: 9px 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger-light); color: var(--danger); padding: 6px 10px; }
+  .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+  .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
+
+  .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 20px; overflow-x: auto; border-bottom: 1px solid var(--border); }
+  .bar-col { flex: 1; min-width: 38px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .bar-group { display: flex; align-items: flex-end; gap: 2px; height: 110px; width: 100%; justify-content: center; }
+  .bar { width: 10px; border-radius: 3px 3px 0 0; transition: height 0.3s; min-height: 2px; }
+  .bar.inc { background: var(--success); }
+  .bar.out { background: var(--danger); }
+  .bar-label { font-size: 0.65rem; color: var(--muted); margin-top: 6px; text-align: center; white-space: nowrap; }
+  .bar-col.selected .bar-label { color: var(--primary); font-weight: bold; }
+
+  .progress-bg { background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { background: var(--primary); height: 100%; transition: width 0.3s; }
+
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; }
+  .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; padding: 8px 4px; z-index: 50; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  }
+  .nav-btn {
+    background: none; border: none; color: var(--muted); font-size: 0.75rem; font-weight: bold; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 8px; flex: 1;
+  }
+  .nav-btn.active { color: var(--primary); background: var(--primary-light); }
+  .nav-icon { font-size: 1.2rem; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 100; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; padding: 18px; }
+  .months-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+  .month-cell { display: flex; flex-direction: column; background: var(--bg); padding: 8px; border-radius: 8px; }
+  .month-cell span { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .month-cell input { width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; direction: ltr; font-weight: bold; }
+
+  .toast {
+    position: fixed; top: 75px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff;
+    padding: 10px 18px; border-radius: 25px; font-size: 0.85rem; z-index: 200; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<header>
+  <div class="header-top">
+    <h1>مدير الدخل والأقساط</h1>
+    <span id="syncStatus" class="sync-badge">حفظ محلي</span>
+  </div>
+  <div class="month-bar">
+    <button type="button" class="btn-nav" id="prevMonthBtn">السابق</button>
+    <select id="monthSelect"></select>
+    <button type="button" class="btn-nav" id="nextMonthBtn">التالي</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- TAB 1: DASHBOARD -->
+  <div id="tab-dash" class="tab-content active">
+    <div class="kpi-grid">
+      <div class="card kpi-card income">
+        <div class="kpi-title">دخل الشهر</div>
+        <div class="kpi-val" id="kpiIncome">0</div>
+      </div>
+      <div class="card kpi-card expense">
+        <div class="kpi-title">مصاريف الشهر</div>
+        <div class="kpi-val" id="kpiExpense">0</div>
+      </div>
+      <div class="card kpi-card inst">
+        <div class="kpi-title">أقساط الشهر</div>
+        <div class="kpi-val" id="kpiInst">0</div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-title">صافي المتبقي</div>
+        <div class="kpi-val" id="kpiNet">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <span>مقارنة التدفقات (أخضر: دخل / أحمر: التزامات ومصاريف)</span>
+      </div>
+      <div class="chart-bars" id="chartContainer"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <span>إجماليات الفترة الكلية (ديسمبر 2026 - ديسمبر 2027)</span>
+      </div>
+      <div class="item-row">
+        <span>إجمالي الدخل (13 شهر)</span>
+        <strong style="color:var(--success)" id="totIncome">0</strong>
+      </div>
+      <div class="item-row">
+        <span>إجمالي المصاريف (13 شهر)</span>
+        <strong style="color:var(--warning)" id="totExpense">0</strong>
+      </div>
+      <div class="item-row">
+        <span>إجمالي الأقساط (13 شهر)</span>
+        <strong style="color:var(--danger)" id="totInst">0</strong>
+      </div>
+      <div class="item-row">
+        <span>صافي الفائض / العجز الكلي</span>
+        <strong id="totNet">0</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: INCOME & EXPENSES -->
+  <div id="tab-inc" class="tab-content">
+    <div class="card">
+      <div class="section-title">
+        <span>مصادر الدخل (<span class="curMonthName"></span>)</span>
+        <button type="button" class="btn btn-outline btn-sm" id="copyPrevIncBtn">نسخ من الشهر السابق</button>
+      </div>
+      <div id="incomeList"></div>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <input type="text" id="newIncName" class="form-control" placeholder="اسم مصدر دخل جديد...">
+        <button type="button" class="btn btn-success" id="addIncBtn">إضافة</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <span>المصاريف والنفقات (<span class="curMonthName"></span>)</span>
+        <button type="button" class="btn btn-outline btn-sm" id="copyPrevExpBtn">نسخ من الشهر السابق</button>
+      </div>
+      <div id="expenseList"></div>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <input type="text" id="newExpName" class="form-control" placeholder="اسم بند مصروف جديد...">
+        <button type="button" class="btn btn-primary" id="addExpBtn">إضافة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: INSTALLMENTS -->
+  <div id="tab-inst" class="tab-content">
+    <div class="card">
+      <div class="section-title">
+        <span>الأقساط المستحقة في (<span class="curMonthName"></span>)</span>
+      </div>
+      <div id="instList"></div>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <input type="text" id="newInstName" class="form-control" placeholder="اسم قسط أو جهة جديدة...">
+        <button type="button" class="btn btn-primary" id="addInstBtn">إضافة قسط</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <span>موقف سداد الأقساط حتى (<span class="curMonthName"></span>)</span>
+      </div>
+      <div id="instSummaryList"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: SYNC & BACKUP -->
+  <div id="tab-sync" class="tab-content">
+    <div class="card">
+      <div class="section-title"><span>المزامنة السحابية بين الموبايل والكمبيوتر (Firebase)</span></div>
+      <p style="font-size:0.85rem; color:var(--muted); line-height:1.5;">
+        أدخل رابط <strong>Firebase Realtime Database</strong> ونفس رمز الحماية على الكمبيوتر والموبايل لمزامنة بياناتك تلقائياً.
+      </p>
+      <div class="form-group">
+        <label>رابط قاعدة بيانات Firebase:</label>
+        <input type="url" id="fbUrlInput" class="form-control" style="direction:ltr" placeholder="https://your-project-default-rtdb.firebaseio.com">
+      </div>
+      <div class="form-group">
+        <label>رمز الحماية السري (اختياري لتمييز بياناتك):</label>
+        <input type="text" id="fbKeyInput" class="form-control" style="direction:ltr" placeholder="مثال: ahmed2026">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" id="saveSyncBtn">حفظ وتفعيل المزامنة</button>
+        <button type="button" class="btn btn-outline" id="pullSyncBtn">سحب البيانات من السحابة الآن</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span>النسخ الاحتياطي وتصدير Excel</span></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-success" id="exportCsvBtn">تصدير جدول Excel (CSV)</button>
+        <button type="button" class="btn btn-outline" id="exportJsonBtn">تنزيل نسخة احتياطية (JSON)</button>
+        <button type="button" class="btn btn-danger" id="resetDataBtn">استعادة الأرقام الافتراضية</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FOR 13-MONTH EDITING -->
+<div id="editModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="section-title">
+      <span id="modalTitle">تعديل قيم البند لجميع الشهور</span>
+      <button type="button" class="btn btn-outline btn-sm" id="closeModalBtn">إغلاق</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <input type="number" id="fillAllVal" class="form-control" placeholder="اكتب مبلغاً لتطبيقه على كل الشهور">
+      <button type="button" class="btn btn-outline" id="applyAllBtn">تطبيق للكل</button>
+    </div>
+    <div class="months-grid" id="modalMonthsGrid"></div>
+    <button type="button" class="btn btn-primary" style="width:100%" id="saveModalBtn">حفظ التعديلات</button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button type="button" class="nav-btn active" data-tab="tab-dash">
+    <span class="nav-icon">📊</span>
+    <span>الداشبورد</span>
+  </button>
+  <button type="button" class="nav-btn" data-tab="tab-inc">
+    <span class="nav-icon">💰</span>
+    <span>الدخل والمصاريف</span>
+  </button>
+  <button type="button" class="nav-btn" data-tab="tab-inst">
+    <span class="nav-icon">💳</span>
+    <span>الأقساط</span>
+  </button>
+  <button type="button" class="nav-btn" data-tab="tab-sync">
+    <span class="nav-icon">☁️</span>
+    <span>المزامنة والحفظ</span>
+  </button>
+</nav>
+
+<script>
+(function() {
+  var MONTHS = [
+    "ديسمبر 2026", "يناير 2027", "فبراير 2027", "مارس 2027", "أبريل 2027",
+    "مايو 2027", "يونيو 2027", "يوليو 2027", "أغسطس 2027", "سبتمبر 2027",
+    "أكتوبر 2027", "نوفمبر 2027", "ديسمبر 2027"
+  ];
+
+  var DEFAULT_DATA = {
+    incomes: [
+      { id: "inc1", name: "المرتب الأساسي", note: "دخل ثابت", vals: [6710,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "inc2", name: "حوافز / مكافآت / عمولات", note: "دخل متغير", vals: [350,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "inc3", name: "دخل من جهات أخرى / عمل حر", note: "دخل إضافي", vals: [9000,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "inc4", name: "مصادر دخل أخرى", note: "أخرى", vals: [4650,0,0,0,0,0,0,0,0,0,0,0,0] }
+    ],
+    expenses: [
+      { id: "exp1", name: "مصاريف معيشة وطعام", note: "أساسي", vals: [0,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "exp2", name: "فواتير ومرافق (كهرباء، نت، موبايل)", note: "ثابت", vals: [1000,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "exp3", name: "جمعيات", note: "ثابت", vals: [2000,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { id: "exp4", name: "مصاريف شخصية وأخرى", note: "أخرى", vals: [2500,0,0,0,0,0,0,0,0,0,0,0,0] }
+    ],
+    installments: [
+      { id: "ins1", name: "بنك نكست", note: "بنك", vals: [1746,1260,1260,1260,1260,1260,1260,924,924,924,924,536,0] },
+      { id: "ins2", name: "فوري", note: "تقسيط", vals: [1861.96,1861.96,1747.75,1587.8,1290.58,1290.58,1166.67,1166.67,1166.67,1166.67,1166.67,0,0] },
+      { id: "ins3", name: "بريميوم", note: "تقسيط", vals: [764.78,757.78,757.78,757.78,757.78,491.88,0,0,0,0,0,0,0] },
+      { id: "ins4", name: "ترو", note: "تقسيط", vals: [1100,1100,1100,1100,1100,1100,1100,1100,350,0,0,0,0] },
+      { id: "ins5", name: "كليفر", note: "تقسيط", vals: [407.49,407.49,407.49,407.49,407.49,0,0,0,0,0,0,0,0] },
+      { id: "ins6", name: "فاليو", note: "تقسيط", vals: [5425,5425,3579,3579,3579,2663,2663,1267,1267,1267,1267,1267,1267] }
+    ]
+  };
+
+  var STORAGE_KEY = "budget_app_data_v3";
+  var SYNC_CFG_KEY = "budget_sync_cfg_v3";
+  var curMonth = 0;
+  var appData = loadLocalData();
+  var syncCfg = loadSyncCfg();
+  var editingTarget = null;
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function loadLocalData() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return clone(DEFAULT_DATA);
+  }
+
+  function loadSyncCfg() {
+    try {
+      var saved = localStorage.getItem(SYNC_CFG_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { url: "", key: "default" };
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function() { t.style.display = "none"; }, 2500);
+  }
+
+  function fmt(num) {
+    var n = Number(num) || 0;
+    return n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function saveAll(pushCloud) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    } catch (e) {}
+    renderAll();
+    if (pushCloud !== false && syncCfg.url) {
+      pushToFirebase();
+    }
+  }
+
+  function getFirebaseEndpoint() {
+    if (!syncCfg.url) return "";
+    var base = syncCfg.url.trim().replace(/\/+$/, "");
+    var safeKey = (syncCfg.key || "default").replace(/[^a-zA-Z0-9_-]/g, "_");
+    return base + "/budget_tracker_" + safeKey + ".json";
+  }
+
+  function pushToFirebase() {
+    var endpoint = getFirebaseEndpoint();
+    if (!endpoint) return;
+    var badge = document.getElementById("syncStatus");
+    badge.textContent = "جاري الرفع...";
+    fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(appData)
+    }).then(function(res) {
+      if (res.ok) {
+        badge.textContent = "متصل بالسحابة";
+        badge.className = "sync-badge online";
+      } else {
+        badge.textContent = "خطأ مزامنة";
+        badge.className = "sync-badge";
+      }
+    }).catch(function() {
+      badge.textContent = "غير متصل";
+      badge.className = "sync-badge";
+    });
+  }
+
+  function pullFromFirebase(silent) {
+    var endpoint = getFirebaseEndpoint();
+    if (!endpoint) return;
+    var badge = document.getElementById("syncStatus");
+    fetch(endpoint).then(function(res) {
+      return res.json();
+    }).then(function(remote) {
+      if (remote && remote.incomes && remote.installments) {
+        appData = remote;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        renderAll();
+        if (!silent) showToast("تم تحديث البيانات من السحابة");
+      } else if (!silent) {
+        pushToFirebase();
+        showToast("تم رفع بياناتك الحالية للسحابة");
+      }
+      badge.textContent = "متصل بالسحابة";
+      badge.className = "sync-badge online";
+    }).catch(function() {
+      badge.textContent = "تعذر الاتصال";
+      badge.className = "sync-badge";
+      if (!silent) showToast("تعذر الاتصال بقاعدة البيانات، تأكد من الرابط");
+    });
+  }
+
+  function initMonths() {
+    var sel = document.getElementById("monthSelect");
+    sel.innerHTML = "";
+    for (var i = 0; i < MONTHS.length; i++) {
+      var opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = MONTHS[i];
+      sel.appendChild(opt);
+    }
+    sel.value = curMonth;
+  }
+
+  function renderAll() {
+    document.getElementById("monthSelect").value = curMonth;
+    var labels = document.querySelectorAll(".curMonthName");
+    for (var i = 0; i < labels.length; i++) {
+      labels[i].textContent = MONTHS[curMonth];
+    }
+
+    var mInc = 0, mExp = 0, mIns = 0;
+    var totInc = 0, totExp = 0, totIns = 0;
+
+    for (var m = 0; m < MONTHS.length; m++) {
+      var sI = 0, sE = 0, sN = 0;
+      appData.incomes.forEach(function(item) { sI += Number(item.vals[m]) || 0; });
+      appData.expenses.forEach(function(item) { sE += Number(item.vals[m]) || 0; });
+      appData.installments.forEach(function(item) { sN += Number(item.vals[m]) || 0; });
+      totInc += sI; totExp += sE; totIns += sN;
+      if (m === curMonth) { mInc = sI; mExp = sE; mIns = sN; }
+    }
+
+    var mNet = mInc - mExp - mIns;
+    var totNet = totInc - totExp - totIns;
+
+    document.getElementById("kpiIncome").textContent = fmt(mInc);
+    document.getElementById("kpiExpense").textContent = fmt(mExp);
+    document.getElementById("kpiInst").textContent = fmt(mIns);
+    var netEl = document.getElementById("kpiNet");
+    netEl.textContent = fmt(mNet);
+    netEl.style.color = mNet >= 0 ? "var(--success)" : "var(--danger)";
+
+    document.getElementById("totIncome").textContent = fmt(totInc);
+    document.getElementById("totExpense").textContent = fmt(totExp);
+    document.getElementById("totInst").textContent = fmt(totIns);
+    var totNetEl = document.getElementById("totNet");
+    totNetEl.textContent = fmt(totNet);
+    totNetEl.style.color = totNet >= 0 ? "var(--success)" : "var(--danger)";
+
+    renderChart();
+    renderCategoryList("incomeList", "incomes");
+    renderCategoryList("expenseList", "expenses");
+    renderCategoryList("instList", "installments");
+    renderInstSummary();
+  }
+
+  function renderChart() {
+    var container = document.getElementById("chartContainer");
+    container.innerHTML = "";
+    var maxVal = 1;
+    var monthlyStats = [];
+
+    for (var m = 0; m < MONTHS.length; m++) {
+      var inc = 0, out = 0;
+      appData.incomes.forEach(function(x) { inc += Number(x.vals[m]) || 0; });
+      appData.expenses.forEach(function(x) { out += Number(x.vals[m]) || 0; });
+      appData.installments.forEach(function(x) { out += Number(x.vals[m]) || 0; });
+      if (inc > maxVal) maxVal = inc;
+      if (out > maxVal) maxVal = out;
+      monthlyStats.push({ inc: inc, out: out });
+    }
+
+    for (var i = 0; i < MONTHS.length; i++) {
+      (function(idx) {
+        var col = document.createElement("div");
+        col.className = "bar-col" + (idx === curMonth ? " selected" : "");
+        var hInc = Math.round((monthlyStats[idx].inc / maxVal) * 100);
+        var hOut = Math.round((monthlyStats[idx].out / maxVal) * 100);
+        var shortName = MONTHS[idx].split(" ")[0];
+        col.innerHTML =
+          '<div class="bar-group">' +
+            '<div class="bar inc" style="height:' + hInc + '%"></div>' +
+            '<div class="bar out" style="height:' + hOut + '%"></div>' +
+          '</div>' +
+          '<div class="bar-label">' + shortName + '</div>';
+        col.addEventListener("click", function() {
+          curMonth = idx;
+          renderAll();
+        });
+        container.appendChild(col);
+      })(i);
+    }
+  }
+
+  function renderCategoryList(containerId, listKey) {
+    var container = document.getElementById(containerId);
+    container.innerHTML = "";
+    var list = appData[listKey];
+
+    list.forEach(function(item, index) {
+      var row = document.createElement("div");
+      row.className = "item-row";
+
+      var info = document.createElement("div");
+      info.className = "item-info";
+      var totalItem = 0;
+      for (var k = 0; k < MONTHS.length; k++) totalItem += Number(item.vals[k]) || 0;
+      info.innerHTML = '<div class="item-name">' + item.name + '</div>' +
+                       '<div class="item-sub">إجمالي 13 شهر: ' + fmt(totalItem) + '</div>';
+
+      var input = document.createElement("input");
+      input.type = "number";
+      input.step = "any";
+      input.className = "amount-input";
+      input.value = item.vals[curMonth];
+      input.addEventListener("change", function() {
+        appData[listKey][index].vals[curMonth] = parseFloat(this.value) || 0;
+        saveAll();
+      });
+
+      var editAllBtn = document.createElement("button");
+      editAllBtn.type = "button";
+      editAllBtn.className = "btn btn-outline btn-sm";
+      editAllBtn.textContent = "13 شهر";
+      editAllBtn.addEventListener("click", function() {
+        openModal(listKey, index);
+      });
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn btn-danger btn-sm";
+      delBtn.textContent = "حذف";
+      delBtn.addEventListener("click", function() {
+        if (confirm("هل تريد حذف (" + item.name + ")؟")) {
+          appData[listKey].splice(index, 1);
+          saveAll();
+        }
+      });
+
+      row.appendChild(info);
+      row.appendChild(input);
+      row.appendChild(editAllBtn);
+      row.appendChild(delBtn);
+      container.appendChild(row);
+    });
+  }
+
+  function renderInstSummary() {
+    var container = document.getElementById("instSummaryList");
+    container.innerHTML = "";
+    appData.installments.forEach(function(item) {
+      var total = 0, paid = 0;
+      for (var m = 0; m < MONTHS.length; m++) {
+        var v = Number(item.vals[m]) || 0;
+        total += v;
+        if (m <= curMonth) paid += v;
+      }
+      var rem = total - paid;
+      var pct = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+      var div = document.createElement("div");
+      div.style.marginBottom = "14px";
+      div.innerHTML =
+        '<div style="display:flex; justify-content:space-between; font-size:0.9rem;">' +
+          '<strong>' + item.name + ' (' + pct + '%)</strong>' +
+          '<span>مدفوع: ' + fmt(paid) + ' | متبقي: <strong style="color:var(--danger)">' + fmt(rem) + '</strong></span>' +
+        '</div>' +
+        '<div class="progress-bg"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
+      container.appendChild(div);
+    });
+  }
+
+  function openModal(listKey, index) {
+    editingTarget = { listKey: listKey, index: index };
+    var item = appData[listKey][index];
+    document.getElementById("modalTitle").textContent = "تعديل: " + item.name;
+    document.getElementById("fillAllVal").value = "";
+    var grid = document.getElementById("modalMonthsGrid");
+    grid.innerHTML = "";
+
+    for (var m = 0; m < MONTHS.length; m++) {
+      var cell = document.createElement("div");
+      cell.className = "month-cell";
+      cell.innerHTML = '<span>' + MONTHS[m] + '</span>' +
+                       '<input type="number" step="any" data-m="' + m + '" value="' + item.vals[m] + '">';
+      grid.appendChild(cell);
+    }
+    document.getElementById("editModal").classList.add("open");
+  }
+
+  // Navigation Events
+  var navBtns = document.querySelectorAll(".nav-btn");
+  for (var i = 0; i < navBtns.length; i++) {
+    navBtns[i].addEventListener("click", function() {
+      var target = this.getAttribute("data-tab");
+      for (var j = 0; j < navBtns.length; j++) navBtns[j].classList.remove("active");
+      this.classList.add("active");
+      var tabs = document.querySelectorAll(".tab-content");
+      for (var k = 0; k < tabs.length; k++) tabs[k].classList.remove("active");
+      document.getElementById(target).classList.add("active");
+    });
+  }
+
+  document.getElementById("monthSelect").addEventListener("change", function() {
+    curMonth = parseInt(this.value, 10) || 0;
+    renderAll();
+  });
+
+  document.getElementById("prevMonthBtn").addEventListener("click", function() {
+    if (curMonth > 0) { curMonth--; renderAll(); }
+  });
+
+  document.getElementById("nextMonthBtn").addEventListener("click", function() {
+    if (curMonth < MONTHS.length - 1) { curMonth++; renderAll(); }
+  });
+
+  document.getElementById("addIncBtn").addEventListener("click", function() {
+    var inp = document.getElementById("newIncName");
+    var name = inp.value.trim();
+    if (!name) return;
+    appData.incomes.push({ id: "inc_" + Date.now(), name: name, note: "", vals: [0,0,0,0,0,0,0,0,0,0,0,0,0] });
+    inp.value = "";
+    saveAll();
+    showToast("تمت إضافة مصدر الدخل");
+  });
+
+  document.getElementById("addExpBtn").addEventListener("click", function() {
+    var inp = document.getElementById("newExpName");
+    var name = inp.value.trim();
+    if (!name) return;
+    appData.expenses.push({ id: "exp_" + Date.now(), name: name, note: "", vals: [0,0,0,0,0,0,0,0,0,0,0,0,0] });
+    inp.value = "";
+    saveAll();
+    showToast("تمت إضافة المصروف");
+  });
+
+  document.getElementById("addInstBtn").addEventListener("click", function() {
+    var inp = document.getElementById("newInstName");
+    var name = inp.value.trim();
+    if (!name) return;
+    appData.installments.push({ id: "ins_" + Date.now(), name: name, note: "", vals: [0,0,0,0,0,0,0,0,0,0,0,0,0] });
+    inp.value = "";
+    saveAll();
+    showToast("تمت إضافة القسط");
+  });
+
+  document.getElementById("copyPrevIncBtn").addEventListener("click", function() {
+    if (curMonth === 0) { showToast("هذا هو الشهر الأول"); return; }
+    appData.incomes.forEach(function(x) { x.vals[curMonth] = x.vals[curMonth - 1]; });
+    saveAll();
+    showToast("تم نسخ الدخل من الشهر السابق");
+  });
+
+  document.getElementById("copyPrevExpBtn").addEventListener("click", function() {
+    if (curMonth === 0) { showToast("هذا هو الشهر الأول"); return; }
+    appData.expenses.forEach(function(x) { x.vals[curMonth] = x.vals[curMonth - 1]; });
+    saveAll();
+    showToast("تم نسخ المصاريف من الشهر السابق");
+  });
+
+  // Modal Events
+  document.getElementById("closeModalBtn").addEventListener("click", function() {
+    document.getElementById("editModal").classList.remove("open");
+  });
+
+  document.getElementById("applyAllBtn").addEventListener("click", function() {
+    var v = parseFloat(document.getElementById("fillAllVal").value) || 0;
+    var inputs = document.querySelectorAll("#modalMonthsGrid input");
+    for (var i = 0; i < inputs.length; i++) inputs[i].value = v;
+  });
+
+  document.getElementById("saveModalBtn").addEventListener("click", function() {
+    if (!editingTarget) return;
+    var inputs = document.querySelectorAll("#modalMonthsGrid input");
+    for (var i = 0; i < inputs.length; i++) {
+      var m = parseInt(inputs[i].getAttribute("data-m"), 10);
+      appData[editingTarget.listKey][editingTarget.index].vals[m] = parseFloat(inputs[i].value) || 0;
+    }
+    document.getElementById("editModal").classList.remove("open");
+    saveAll();
+    showToast("تم حفظ قيم جميع الشهور");
+  });
+
+  // Sync & Export Events
+  document.getElementById("fbUrlInput").value = syncCfg.url || "";
+  document.getElementById("fbKeyInput").value = syncCfg.key || "default";
+
+  document.getElementById("saveSyncBtn").addEventListener("click", function() {
+    syncCfg.url = document.getElementById("fbUrlInput").value.trim();
+    syncCfg.key = document.getElementById("fbKeyInput").value.trim() || "default";
+    localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg));
+    if (syncCfg.url) {
+      pullFromFirebase(false);
+    } else {
+      document.getElementById("syncStatus").textContent = "حفظ محلي";
+      document.getElementById("syncStatus").className = "sync-badge";
+      showToast("تم إلغاء المزامنة السحابية");
+    }
+  });
+
+  document.getElementById("pullSyncBtn").addEventListener("click", function() {
+    if (!syncCfg.url) { showToast("أدخل رابط Firebase أولاً"); return; }
+    pullFromFirebase(false);
+  });
+
+  document.getElementById("exportCsvBtn").addEventListener("click", function() {
+    var rows = [["القسم", "البند"].concat(MONTHS)];
+    appData.incomes.forEach(function(x) { rows.push(["الدخل", x.name].concat(x.vals)); });
+    appData.expenses.forEach(function(x) { rows.push(["المصاريف", x.name].concat(x.vals)); });
+    appData.installments.forEach(function(x) { rows.push(["الأقساط", x.name].concat(x.vals)); });
+    var csv = "﻿" + rows.map(function(r) { return r.join(","); }).join("
+");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "بيانات_الدخل_والأقساط.csv";
+    a.click();
+  });
+
+  document.getElementById("exportJsonBtn").addEventListener("click", function() {
+    var blob = new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "نسخة_احتياطية_الأقساط.json";
+    a.click();
+  });
+
+  document.getElementById("resetDataBtn").addEventListener("click", function() {
+    if (confirm("هل أنت متأكد من استعادة أرقام ملف الإكسل الأصلية؟")) {
+      appData = clone(DEFAULT_DATA);
+      saveAll();
+      showToast("تمت استعادة البيانات الافتراضية");
+    }
+  });
+
+  initMonths();
+  renderAll();
+  if (syncCfg.url) {
+    pullFromFirebase(true);
+  }
+})();
+</script>
+</body>
+</html>
