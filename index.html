@@ -136,6 +136,7 @@
 <header>
   <div class="header-top">
     <h1>مدير الدخل والأقساط</h1>
+    <button type="button" class="sync-badge" id="userBtn" style="border:none; cursor:pointer;">👤</button>
     <span id="syncStatus" class="sync-badge">حفظ محلي</span>
   </div>
   <div class="month-bar">
@@ -245,6 +246,17 @@
     </div>
   </div>
 
+  <!-- TAB 5: CHANGE LOG -->
+  <div id="tab-log" class="tab-content">
+    <div class="card">
+      <div class="section-title"><span>سجل التعديلات (مين عدّل إيه ومتى)</span></div>
+      <p style="font-size:0.8rem; color:var(--muted); line-height:1.5;">
+        الاسم بيتكتب يدوياً على الجهاز، فهو للتتبع فقط وليس للحماية.
+      </p>
+      <div id="logList"></div>
+    </div>
+  </div>
+
   <!-- TAB 4: SYNC & BACKUP -->
   <div id="tab-sync" class="tab-content">
     <div class="card">
@@ -305,6 +317,10 @@
   <button type="button" class="nav-btn" data-tab="tab-inst">
     <span class="nav-icon">💳</span>
     <span>الأقساط</span>
+  </button>
+  <button type="button" class="nav-btn" data-tab="tab-log">
+    <span class="nav-icon">📝</span>
+    <span>السجل</span>
   </button>
   <button type="button" class="nav-btn" data-tab="tab-sync">
     <span class="nav-icon">☁️</span>
@@ -412,15 +428,125 @@
       out[lists[i]] = arr;
     }
     out.updatedAt = Number(d.updatedAt) || 0;
+    var rawLog = d.log || [];
+    out.log = Array.isArray(rawLog) ? rawLog : Object.keys(rawLog).map(function(k) { return rawLog[k]; });
     return out;
   }
 
+  var USER_KEY = "budget_user_name";
+  var currentUser = "";
+  var lastSnapshot = null;
+  try { currentUser = localStorage.getItem(USER_KEY) || ""; } catch (e) {}
+
+  function updateUserBtn() {
+    document.getElementById("userBtn").textContent = "👤 " + (currentUser || "بدون اسم");
+  }
+
+  function askUserName(force) {
+    if (currentUser && !force) { updateUserBtn(); return; }
+    var n = prompt("اكتب اسمك (هيتسجل مع كل تعديل):", currentUser || "");
+    if (n && n.trim()) {
+      currentUser = n.trim();
+      try { localStorage.setItem(USER_KEY, currentUser); } catch (e) {}
+    }
+    updateUserBtn();
+  }
+
+  function keyOf(x) { return x.id || x.name; }
+
+  function describeChanges(prev, cur) {
+    var out = [];
+    var sections = [["incomes", "دخل"], ["expenses", "مصروف"], ["installments", "قسط"]];
+    for (var s = 0; s < sections.length; s++) {
+      var key = sections[s][0], label = sections[s][1];
+      var pl = prev[key] || [], cl = cur[key] || [];
+      var before = {}, after = {}, i, j;
+      for (i = 0; i < pl.length; i++) before[keyOf(pl[i])] = pl[i];
+      for (i = 0; i < cl.length; i++) after[keyOf(cl[i])] = cl[i];
+      for (i = 0; i < cl.length; i++) {
+        var a = cl[i], b = before[keyOf(a)];
+        if (!b) { out.push("أضاف " + label + ": " + a.name); continue; }
+        if (b.name !== a.name) out.push("غيّر اسم " + label + " من \"" + b.name + "\" إلى \"" + a.name + "\"");
+        var parts = [];
+        for (j = 0; j < MONTHS.length; j++) {
+          if (Number(b.vals[j]) !== Number(a.vals[j])) {
+            parts.push(MONTHS[j] + ": " + fmt(b.vals[j]) + " ← " + fmt(a.vals[j]));
+          }
+        }
+        if (parts.length) {
+          out.push("عدّل " + label + " \"" + a.name + "\" (" + (parts.length <= 2 ? parts.join("، ") : parts.length + " شهور") + ")");
+        }
+      }
+      for (i = 0; i < pl.length; i++) {
+        if (!after[keyOf(pl[i])]) out.push("حذف " + label + ": " + pl[i].name);
+      }
+    }
+    return out;
+  }
+
+  function appendLog(changes) {
+    if (!Array.isArray(appData.log)) appData.log = [];
+    var now = Date.now();
+    for (var i = 0; i < changes.length; i++) {
+      appData.log.push({ t: now, u: currentUser || "بدون اسم", a: changes[i] });
+    }
+    if (appData.log.length > 500) appData.log = appData.log.slice(-500);
+  }
+
+  function mergeLogs(a, b) {
+    var seen = {}, out = [];
+    (a || []).concat(b || []).forEach(function(e) {
+      if (!e || typeof e.t !== "number") return;
+      var k = e.t + "|" + e.u + "|" + e.a;
+      if (!seen[k]) { seen[k] = true; out.push(e); }
+    });
+    out.sort(function(x, y) { return x.t - y.t; });
+    return out.slice(-500);
+  }
+
+  function renderLog() {
+    var list = document.getElementById("logList");
+    if (!list) return;
+    var log = (appData.log || []).slice(-200).reverse();
+    list.innerHTML = "";
+    if (!log.length) {
+      var empty = document.createElement("div");
+      empty.className = "item-sub";
+      empty.textContent = "لا توجد تعديلات مسجلة بعد";
+      list.appendChild(empty);
+      return;
+    }
+    log.forEach(function(e) {
+      var row = document.createElement("div");
+      row.className = "item-row";
+      var info = document.createElement("div");
+      info.className = "item-info";
+      var main = document.createElement("div");
+      main.className = "item-name";
+      main.style.fontSize = "0.85rem";
+      main.textContent = e.a;
+      var sub = document.createElement("div");
+      sub.className = "item-sub";
+      sub.textContent = "👤 " + e.u + " • " + new Date(e.t).toLocaleString("ar-EG");
+      info.appendChild(main);
+      info.appendChild(sub);
+      row.appendChild(info);
+      list.appendChild(row);
+    });
+  }
+
   function saveAll(pushCloud) {
+    if (lastSnapshot) {
+      var changes = describeChanges(lastSnapshot, appData);
+      if (changes.length) appendLog(changes);
+    }
+    lastSnapshot = clone(appData);
     appData.updatedAt = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
     } catch (e) {}
     renderAll();
+    renderLog();
     if (pushCloud !== false && syncCfg.url) {
       pushToFirebase();
     }
@@ -465,9 +591,12 @@
     }).then(function(remote) {
       var cleaned = normalizeData(remote);
       if (cleaned && cleaned.updatedAt > (appData.updatedAt || 0)) {
+        cleaned.log = mergeLogs(cleaned.log, appData.log);
         appData = cleaned;
+        lastSnapshot = clone(appData);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
         renderAll();
+        renderLog();
         if (!silent) showToast("تم تحديث البيانات من السحابة");
       } else if (cleaned) {
         if ((appData.updatedAt || 0) > cleaned.updatedAt) pushToFirebase();
@@ -767,6 +896,10 @@
     showToast("تم حفظ قيم جميع الشهور");
   });
 
+  document.getElementById("userBtn").addEventListener("click", function() {
+    askUserName(true);
+  });
+
   // Sync & Export Events
   document.getElementById("fbUrlInput").value = syncCfg.url || "";
   document.getElementById("fbKeyInput").value = syncCfg.key || "default";
@@ -814,14 +947,19 @@
 
   document.getElementById("resetDataBtn").addEventListener("click", function() {
     if (confirm("هل أنت متأكد من استعادة الأرقام الأصلية؟ سيتم استبدال البيانات الحالية" + (syncCfg.url ? " وأيضاً على السحابة عند الحفظ التالي." : "."))) {
+      var oldLog = appData.log || [];
       appData = clone(DEFAULT_DATA);
+      appData.log = oldLog;
       saveAll();
       showToast("تمت استعادة البيانات الافتراضية");
     }
   });
 
   initMonths();
+  askUserName(false);
   renderAll();
+  lastSnapshot = clone(appData);
+  renderLog();
   if (syncCfg.url) {
     pullFromFirebase(true);
   }
