@@ -275,6 +275,8 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="btn btn-primary" id="saveSyncBtn">حفظ وتفعيل المزامنة</button>
         <button type="button" class="btn btn-outline" id="pullSyncBtn">سحب البيانات من السحابة الآن</button>
+        <button type="button" class="btn btn-danger" id="clearCloudBtn">مسح البيانات من السحابة</button>
+        <button type="button" class="btn btn-danger" id="clearAllBtn">مسح كل البيانات (محلي وسحابة)</button>
       </div>
     </div>
 
@@ -579,6 +581,27 @@
     }).catch(function() {
       badge.textContent = "غير متصل";
       badge.className = "sync-badge";
+    });
+  }
+
+  function clearCloud(cb) {
+    var endpoint = getFirebaseEndpoint();
+    if (!endpoint) { cb(true); return; }
+    var badge = document.getElementById("syncStatus");
+    fetch(endpoint, { method: "DELETE" }).then(function(res) {
+      if (res.ok) {
+        badge.textContent = "تم المسح من السحابة";
+        badge.className = "sync-badge";
+        cb(true);
+      } else {
+        badge.textContent = "خطأ مزامنة";
+        badge.className = "sync-badge";
+        cb(false);
+      }
+    }).catch(function() {
+      badge.textContent = "غير متصل";
+      badge.className = "sync-badge";
+      cb(false);
     });
   }
 
@@ -920,6 +943,26 @@
   document.getElementById("pullSyncBtn").addEventListener("click", function() {
     if (!syncCfg.url) { showToast("أدخل رابط Firebase أولاً"); return; }
     pullFromFirebase(false);
+  });
+
+  document.getElementById("clearCloudBtn").addEventListener("click", function() {
+    if (!syncCfg.url) { showToast("لا توجد مزامنة سحابية مفعلة"); return; }
+    if (!confirm("هل تريد مسح البيانات من السحابة؟ البيانات على هذا الجهاز ستبقى كما هي.")) return;
+    clearCloud(function(ok) {
+      showToast(ok ? "تم مسح البيانات من السحابة" : "فشل مسح البيانات من السحابة");
+    });
+  });
+
+  document.getElementById("clearAllBtn").addEventListener("click", function() {
+    if (!confirm("هل تريد مسح كل البيانات والسجل من هذا الجهاز" + (syncCfg.url ? " ومن السحابة" : "") + "؟")) return;
+    if (!confirm("تأكيد أخير: لا يمكن التراجع عن هذا الإجراء.")) return;
+    clearCloud(function(ok) {
+      if (!ok) { showToast("فشل المسح، لم يتم حذف البيانات المحلية"); return; }
+      lastSnapshot = null;
+      appData = { incomes: [], expenses: [], installments: [], log: [] };
+      saveAll(false);
+      showToast("تم مسح كل البيانات");
+    });
   });
 
   document.getElementById("exportCsvBtn").addEventListener("click", function() {
